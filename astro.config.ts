@@ -20,7 +20,8 @@ import { pluginLineNumbers } from '@expressive-code/plugin-line-numbers'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  site: 'https://astro-erudite.vercel.app',
+  site: 'https://n1rna.github.io',
+  base: '/tirg',
   integrations: [
     expressiveCode({
       themes: ['github-light', 'github-dark'],
@@ -62,7 +63,7 @@ export default defineConfig({
         lineNumbers: {
           foreground: 'var(--muted-foreground)',
         },
-        uiFontFamily: 'var(--font-sans)',
+        uiFontFamily: 'var(--font-mono)',
       },
     }),
     mdx(),

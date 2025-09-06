@@ -2,12 +2,15 @@
 import BlogCard from '@/components/BlogCard.astro'
 import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
+import ProjectCard from '@/components/ProjectCard.astro'
 import { buttonVariants } from '@/components/ui/button'
 import { SITE } from '@/consts'
 import Layout from '@/layouts/Layout.astro'
-import { getRecentPosts } from '@/lib/data-utils'
+import { Image } from 'astro:assets'
+import { getRecentPosts, getAllProjects } from '@/lib/data-utils'
 
 const blog = await getRecentPosts(SITE.featuredPostCount)
+const projects = await getAllProjects()
 ---
 
 <Layout class="max-w-3xl">
@@ -15,73 +18,62 @@ const blog = await getRecentPosts(SITE.featuredPostCount)
   <section>
     <div class="rounded-lg border">
       <div class="flex flex-col space-y-1.5 p-6">
-        <h3 class="text-3xl leading-none font-medium">er·u·dite</h3>
+        <h3 class="text-3xl leading-none font-medium">nima-yazdanmehr</h3>
         <p class="text-muted-foreground text-sm">
-          /ˈer(y)əˌdīt/ &bull; <span class="font-medium">adjective</span>
+          software engineer
         </p>
       </div>
       <div class="p-6 pt-0">
         <p class="text-muted-foreground mb-2 text-sm">
-          astro-erudite is an opinionated, unstyled static blogging template
-          built with <Link
-            href="https://astro.build"
-            class="text-foreground"
-            external
-            underline>Astro</Link
-          >, <Link
-            href="https://tailwindcss.com"
-            class="text-foreground"
-            external
-            underline>Tailwind</Link
-          >, and <Link
-            href="https://ui.shadcn.com"
-            class="text-foreground"
-            external
-            underline>shadcn/ui</Link
-          >. Extraordinarily loosely based on the <Link
-            href="https://astro-micro.vercel.app/"
-            class="text-foreground"
-            external
-            underline>Astro Micro</Link
-          > theme.
+          just a homepage for my thoughts and stuff I find interesting.
         </p>
         <p class="text-muted-foreground text-sm">
-          To use this template, check out the <Link
+          built based on the <Link
             href="https://github.com/jktrn/astro-erudite"
             class="text-foreground"
-            underline
-            external>GitHub</Link
-          > repository. To learn more about why this template exists, read this blog
-          post: <Link
-            href="/blog/the-state-of-static-blogs"
+            external
+            underline>jktrn's astro-erudite</Link
+          > theme.
+        </p>
+
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="rounded-lg border">
+      <div class="flex flex-col space-y-1.5 p-6">
+        <h3 class="text-3xl leading-none font-medium">tirg - تیرگ</h3>
+      </div>
+      <div class="p-6 pt-0">
+        <Image
+          src="https://i.imgur.com/5WvjdP0.jpeg"
+          alt="Tirg"
+          width={300}
+          height={300}
+          class="mb-4"
+        />
+        <p class="text-muted-foreground text-sm">
+          According to the beliefs of the people of Sistan, instead of burying the dead in graves underground,
+          they place the body in a small mud-brick chamber and seal it with clay after the burial.
+          This chamber is called a “Tirg.”Sometimes, it was believed that the dead would rise inside the Tirg, scream,
+          and tear at their burial shroud with their teeth. But no one would come to help,
+          and they would say: “Kafi o da kashida” (meaning “the dead has pulled the shroud into their mouth”).
+        </p>
+        <p class="text-muted-foreground mt-2 text-sm">
+          <Link
+            href="https://www.eranshahr.com/myths/tirg"
             class="text-foreground"
-            underline>The State of Static Blogs in 2024</Link
-          >.
+            external
+            underline>Eranshahr - 1001 Mythical Creatures of Iranian Cultures & Beyond</Link
+          >
         </p>
       </div>
     </div>
   </section>
   <section class="flex flex-col gap-y-4">
-    <h2 class="text-2xl font-medium">Latest posts</h2>
-    <ul class="flex flex-col gap-y-4">
-      {
-        blog.map((post) => (
-          <li>
-            <BlogCard entry={post} />
-          </li>
-        ))
-      }
-    </ul>
-    <div class="flex justify-center">
-      <Link
-        href="/blog"
-        class={buttonVariants({ variant: 'ghost' }) + ' group'}
-      >
-        See all posts <span
-          class="ml-1.5 transition-transform group-hover:translate-x-1"
-          >&rarr;</span
-        >
-      </Link>
+    <h2 class="mb-4 text-2xl font-medium">Projects</h2>
+    <div class="flex flex-col gap-4">
+      {projects.map((project) => <ProjectCard project={project} />)}
     </div>
   </section>
 </Layout>
