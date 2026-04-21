@@ -1,11 +1,17 @@
 ---
 import BlogCard from '@/components/BlogCard.astro'
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
 import PaginationComponent from '@/components/ui/pagination'
 import { SITE } from '@/consts'
 import Layout from '@/layouts/Layout.astro'
-import { getAllPosts, groupPostsByYear } from '@/lib/data-utils'
+import {
+  getAllPosts,
+  getAllTags,
+  groupPostsByYear,
+} from '@/lib/data-utils'
+import { Icon } from 'astro-icon/components'
 import type { PaginateFunction } from 'astro'
 
 export async function getStaticPaths({
@@ -21,23 +27,88 @@ const { page } = Astro.props
 
 const postsByYear = groupPostsByYear(page.data)
 const years = Object.keys(postsByYear).sort((a, b) => parseInt(b) - parseInt(a))
+
+const allPosts = await getAllPosts()
+const tagMap = await getAllTags()
+const topTags = [...tagMap.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 8)
 ---
 
 <Layout class="max-w-3xl">
   <PageHead slot="head" title="Blog" />
+
   <Breadcrumbs
     items={[
       { label: 'Blog', href: '/blog', icon: 'lucide:library-big' },
-      { label: `Page ${page.currentPage}`, icon: 'lucide:book-copy' },
+      ...(page.currentPage > 1
+        ? [{ label: `Page ${page.currentPage}`, icon: 'lucide:book-copy' }]
+        : []),
     ]}
   />
 
-  <div class="flex min-h-[calc(100vh-18rem)] flex-col gap-y-8">
+  <!-- Header -->
+  <section class="flex flex-col gap-3">
+    <div class="flex items-end justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-medium tracking-tight sm:text-4xl">Writing</h1>
+        <p class="text-muted-foreground mt-2 max-w-prose text-sm sm:text-base">
+          notes, essays, and half-formed thoughts. mostly about software,
+          sometimes about other things.
+        </p>
+      </div>
+      <Link
+        href="/rss.xml"
+        class="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 font-mono text-xs"
+        aria-label="RSS feed"
+      >
+        <Icon name="lucide:rss" class="size-3" />
+        rss
+      </Link>
+    </div>
+
+    {
+      topTags.length > 0 && (
+        <div class="flex flex-wrap items-center gap-2 border-t pt-4">
+          <span class="text-muted-foreground font-mono text-[10px] tracking-wide uppercase">
+            tags
+          </span>
+          {topTags.map(([tag, count]) => (
+            <Link
+              href={`/tags/${tag}`}
+              class="bg-secondary/60 hover:bg-secondary inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-mono text-[11px] transition-colors"
+            >
+              <span>#{tag}</span>
+              <span class="text-muted-foreground/60">{count}</span>
+            </Link>
+          ))}
+        </div>
+      )
+    }
+  </section>
+
+  <!-- Posts -->
+  <div class="flex min-h-[calc(100vh-22rem)] flex-col gap-8">
+    {
+      allPosts.length === 0 && (
+        <div class="text-muted-foreground flex flex-col items-center gap-2 rounded-xl border border-dashed p-12 text-center">
+          <Icon name="lucide:pencil-line" class="size-6 opacity-50" />
+          <p class="text-sm">no posts yet - come back soon.</p>
+        </div>
+      )
+    }
     {
       years.map((year) => (
-        <section class="flex flex-col gap-y-4">
-          <div class="font-medium">{year}</div>
-          <ul class="flex flex-col gap-4">
+        <section class="flex flex-col gap-4">
+          <div class="flex items-center gap-3">
+            <span class="font-mono text-sm tracking-tight">{year}</span>
+            <div class="border-border h-px grow border-t border-dashed" />
+            <span class="text-muted-foreground font-mono text-[10px]">
+              {postsByYear[year].length.toString().padStart(2, '0')} post
+              {postsByYear[year].length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <ul class="flex flex-col gap-3">
             {postsByYear[year].map((post) => (
               <li>
                 <BlogCard entry={post} />
@@ -49,10 +120,14 @@ const years = Object.keys(postsByYear).sort((a, b) => parseInt(b) - parseInt(a))
     }
   </div>
 
-  <PaginationComponent
-    currentPage={page.currentPage}
-    totalPages={page.lastPage}
-    baseUrl="/blog/"
-    client:load
-  />
+  {
+    page.lastPage > 1 && (
+      <PaginationComponent
+        currentPage={page.currentPage}
+        totalPages={page.lastPage}
+        baseUrl="/blog/"
+        client:load
+      />
+    )
+  }
 </Layout>

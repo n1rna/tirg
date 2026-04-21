@@ -3,11 +3,12 @@ import BlogCard from '@/components/BlogCard.astro'
 import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
 import ProjectCard from '@/components/ProjectCard.astro'
-import { buttonVariants } from '@/components/ui/button'
-import { SITE } from '@/consts'
+import SocialIcons from '@/components/SocialIcons.astro'
+import { SITE, SOCIAL_LINKS } from '@/consts'
 import Layout from '@/layouts/Layout.astro'
-import { Image } from 'astro:assets'
 import { getRecentPosts, getAllProjects } from '@/lib/data-utils'
+import { Icon } from 'astro-icon/components'
+import { Image } from 'astro:assets'
 
 const blog = await getRecentPosts(SITE.featuredPostCount)
 const projects = await getAllProjects()
@@ -15,65 +16,153 @@ const projects = await getAllProjects()
 
 <Layout class="max-w-3xl">
   <PageHead slot="head" title="Home" />
-  <section>
-    <div class="rounded-lg border">
-      <div class="flex flex-col space-y-1.5 p-6">
-        <h3 class="text-3xl leading-none font-medium">nima-yazdanmehr</h3>
-        <p class="text-muted-foreground text-sm">
-          swe
-        </p>
+
+  <!-- Hero -->
+  <section class="pt-2">
+    <div class="relative overflow-hidden rounded-2xl border">
+      <div
+        class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--accent)_0%,transparent_55%)] opacity-60"
+      >
       </div>
-      <div class="p-6 pt-0">
-        <p class="text-muted-foreground mb-2 text-sm">
-          just a homepage for my thoughts and stuff I find interesting.
-        </p>
-        <p class="text-muted-foreground text-sm">
-          built based on the <Link
-            href="https://github.com/jktrn/astro-erudite"
-            class="text-foreground"
-            external
-            underline>jktrn's astro-erudite</Link
-          > theme.
+      <div class="relative flex flex-col gap-6 p-6 sm:p-8">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex flex-col gap-2">
+            <h1 class="text-3xl font-medium tracking-tight sm:text-4xl">
+              nima yazdanmehr
+            </h1>
+            <p class="text-muted-foreground text-sm sm:text-base">
+              software engineer - building tools, systems, and small pieces of
+              the internet.
+            </p>
+          </div>
+        </div>
+
+        <p class="text-foreground/80 max-w-prose text-sm leading-relaxed sm:text-base">
+          a homepage for my thoughts and things i find interesting. i work on
+          distributed systems, developer tooling, and a few side projects i care
+          about more than i should. persian by origin, curious by default.
         </p>
 
+        <div class="flex flex-wrap items-center gap-2">
+          <SocialIcons links={SOCIAL_LINKS} />
+        </div>
       </div>
     </div>
   </section>
+
+  <!-- Tirg story -->
   <section>
-    <div class="rounded-lg border">
-      <div class="flex flex-col space-y-1.5 p-6">
-        <h3 class="text-3xl leading-none font-medium">tirg - تیرگ</h3>
-      </div>
-      <div class="p-6 pt-0">
-        <Image
-          src="https://i.imgur.com/5WvjdP0.jpeg"
-          alt="Tirg"
-          width={300}
-          height={300}
-          class="mb-4"
+    <div
+      class="rounded-2xl border bg-secondary/20 p-6 sm:p-7"
+    >
+      <div class="mb-4 flex items-center gap-2">
+        <Icon
+          name="lucide:book-open"
+          class="text-muted-foreground size-4"
         />
-        <p class="text-muted-foreground text-sm">
-          According to the beliefs of the people of Sistan, instead of burying the dead in graves underground,
-          they place the body in a small mud-brick chamber and seal it with clay after the burial.
-          This chamber is called a “Tirg.”Sometimes, it was believed that the dead would rise inside the Tirg, scream,
-          and tear at their burial shroud with their teeth. But no one would come to help,
-          and they would say: “Kafi o da kashida” (meaning “the dead has pulled the shroud into their mouth”).
-        </p>
-        <p class="text-muted-foreground mt-2 text-sm">
+        <span
+          class="text-muted-foreground font-mono text-xs tracking-wide uppercase"
+          >about the name · تیرگ</span
+        >
+      </div>
+      <div class="flex flex-col gap-4 sm:flex-row">
+        <div class="shrink-0 sm:w-40">
+          <Image
+            src="https://i.imgur.com/5WvjdP0.jpeg"
+            alt="Tirg"
+            width={320}
+            height={320}
+            class="rounded-lg border object-cover"
+          />
+        </div>
+        <div class="flex flex-col gap-3">
+          <p class="text-foreground/80 text-sm leading-relaxed">
+            In Sistani folk belief, the dead are not buried underground. The
+            body is placed in a small mud-brick chamber sealed with clay - a
+            <em class="not-italic font-medium">tirg</em>. Sometimes, it was
+            said, the dead would wake inside, scream, and tear at their shroud
+            with their teeth. No one would come. They would say:
+          </p>
+          <p class="border-foreground/30 text-foreground/70 border-l-2 pl-3 font-mono text-xs italic">
+            “kafi o da kashida” - the dead has pulled the shroud into their
+            mouth.
+          </p>
           <Link
             href="https://www.eranshahr.com/myths/tirg"
-            class="text-foreground"
+            class="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
             external
-            underline>Eranshahr - 1001 Mythical Creatures of Iranian Cultures & Beyond</Link
           >
-        </p>
+            <Icon name="lucide:external-link" class="size-3" />
+            Eranshahr · 1001 Mythical Creatures of Iranian Cultures
+          </Link>
+        </div>
       </div>
     </div>
   </section>
-  <section class="flex flex-col gap-y-4">
-    <h2 class="mb-4 text-2xl font-medium">Projects</h2>
-    <div class="flex flex-col gap-4">
+
+  <!-- Recent writing -->
+  {
+    blog.length > 0 && (
+      <section class="flex flex-col gap-4">
+        <div class="flex items-end justify-between">
+          <div>
+            <h2 class="text-2xl font-medium tracking-tight">Recent writing</h2>
+            <p class="text-muted-foreground mt-1 text-sm">
+              slow, intermittent. usually when something won't leave my head.
+            </p>
+          </div>
+          <Link
+            href="/blog"
+            class="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 font-mono text-xs"
+          >
+            all posts
+            <Icon name="lucide:arrow-right" class="size-3" />
+          </Link>
+        </div>
+        <div class="flex flex-col gap-3">
+          {blog.map((post) => (
+            <BlogCard entry={post} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Projects -->
+  <section class="flex flex-col gap-4">
+    <div class="flex items-end justify-between">
+      <div>
+        <h2 class="text-2xl font-medium tracking-tight">Projects</h2>
+        <p class="text-muted-foreground mt-1 text-sm">
+          things I build, ship, and maintain.
+        </p>
+      </div>
+      <span
+        class="text-muted-foreground/70 font-mono text-xs"
+        >{projects.length.toString().padStart(2, '0')} total</span
+      >
+    </div>
+    <div class="flex flex-col gap-3">
       {projects.map((project) => <ProjectCard project={project} />)}
+    </div>
+  </section>
+
+  <!-- Credit -->
+  <section>
+    <div
+      class="text-muted-foreground/70 rounded-xl border border-dashed p-4 text-center font-mono text-xs"
+    >
+      built with <Link
+        href="https://astro.build"
+        class="text-foreground/80 hover:text-foreground"
+        external
+        underline>astro</Link
+      > · theme based on <Link
+        href="https://github.com/jktrn/astro-erudite"
+        class="text-foreground/80 hover:text-foreground"
+        external
+        underline>astro-erudite</Link
+      > by jktrn
     </div>
   </section>
 </Layout>

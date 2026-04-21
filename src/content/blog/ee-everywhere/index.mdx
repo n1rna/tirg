@@ -1,0 +1,144 @@
+---
+title: 'ee is eating my env files'
+description: 'How a small schema-first CLI replaced my .env spaghetti across side projects, monorepos, and CI.'
+date: 2026-04-21
+tags: ['devtools', 'ee', 'env', 'ci', 'monorepo']
+authors: ['n1rna']
+---
+
+I have a personal allergy to `.env` files. Not the idea - the reality. A single
+unstructured blob that somehow ends up duplicated in six places, with three
+different opinions on what `DATABASE_URL` should look like in staging, and one
+teammate who swears the comment at the top is the source of truth.
+
+So I wrote [**ee**](https://ee.n1rna.net) - a tiny CLI that forces env vars to
+have a schema, inherit across environments, and get out of the way when I
+actually want to run something.
+
+After a few months of living with it, it has quietly become the piece of my
+stack I reach for first in a new project. This post is about why.
+
+## The idea in one paragraph
+
+Every project defines a schema in `.ee.<service>` - a JSON file that lists
+every variable it expects, its type, whether it's secret, whether it's
+required, and any default. An environment (`development`, `production`, …) is
+a set of values that must validate against that schema. You apply an
+environment by prefixing your command:
+
+```bash
+ee apply development -- bun run dev
+```
+
+That's it. No source-of-truth debate. The schema is the contract.
+
+## In 1tt.dev - one monorepo, two apps, two ee projects
+
+[1tt.dev](https://1tt.dev) is a bun workspace with two Next.js apps
+(`apps/web` for the tools platform, `apps/kim` for [kim1.ai](https://kim1.ai))
+plus a Go API. Each has its own `.ee.*` config and its own environments:
+
+```bash
+# justfile excerpts
+dev args='':
+    ee apply .env.web.development -- ee apply .env.api.development -- {{args}}
+
+dev-web args='':
+    ee apply .env.web.development -- {{args}}
+
+api args='':
+    ee apply .env.api.development -- {{args}}
+```
+
+Notice the nested `ee apply` for the combined dev task - each layer injects
+the vars its service cares about, and nothing leaks. When I `just
+dev-everything`, three processes start with three different, validated
+environments, and I never see an `.env.example` drift out of date again,
+because `ee verify` refuses to move if the schema and values disagree.
+
+Even the per-app `dev` script lives with ee:
+
+```json
+// apps/kim/package.json
+"dev": "ee apply development -c .ee.kim -- next dev -p 3001"
+```
+
+It's a boring detail, but it means a fresh `git clone` is two commands away
+from a running app - and the failure mode if I'm missing a var is a crisp
+schema error, not a stack trace five seconds into a Next.js boot.
+
+## In sigvault - many services, one deploy story
+
+[sigvault](https://sigvault.org) is the opposite shape: a single repo with
+half a dozen services (API, dashboard, admin, landing, walletrs, deploy).
+Each has its own schema:
+
+```
+.ee.api          .ee.walletrs
+.ee.dashboard    .ee.landing
+.ee.admin        .ee.deploy
+```
+
+Locally this keeps services isolated the same way it does in 1tt. But the
+place it really earns its keep is the deploy pipeline. The `deploy` config
+isn't for an app - it's for the **script** that runs the deploy. Schema for
+an ops script feels weird the first time you do it; by the third regret-free
+rollback you stop questioning it.
+
+```bash
+ee apply .env.deploy.${ENVIRONMENT} -- ./infra-deploy.sh all
+```
+
+Same pattern as local dev. Same validation. The deploy script can't be run
+without its schema being satisfied, which means "I forgot to set
+`CLOUDFLARE_ACCOUNT_ID` in prod" becomes a pre-flight failure instead of a
+3 AM incident.
+
+## In CI - `n1rna/ee-action`
+
+This is where it clicks for me. Both projects use a tiny companion GitHub
+Action, [`n1rna/ee-action`](https://github.com/n1rna/ee-action), that does
+one job: take a secret blob from GitHub, a schema, and a per-environment
+values file, and produce a validated `.env` the rest of the workflow can use.
+
+```yaml
+- name: Prepare environment
+  uses: n1rna/ee-action@main
+  with:
+    environment: production
+    config_path: apps/web/.ee.web
+    env_file: apps/web/.env.web.production
+    gh_secret: ${{ secrets.ENV_VARS_WEB }}
+```
+
+Sigvault's `deploy.yaml` repeats this block once per service - seven times,
+actually - and each one is exactly the same shape. That sameness is the
+point. New service? Copy the block, swap the paths, add the secret. Done.
+
+The workflow can't proceed if the secret blob is missing a variable the
+schema demands. The schema is the contract on the laptop, in the monorepo
+task runner, and on the CI runner.
+
+## What actually changed for me
+
+- **Onboarding a new service takes about five minutes** - write the schema,
+  add it to the justfile, add the CI step. No "what does production need
+  again?" archeology.
+- **The `.env.example` trap is gone.** The schema *is* the example. If a
+  value is missing, `ee verify` says so, and CI fails before the build
+  starts.
+- **Secret sprawl is smaller.** One GitHub secret per service, because
+  `ee-action` unpacks the whole env from it. Less to rotate, less to audit.
+- **I stopped being afraid of adding a variable.** Used to be a whole ritual:
+  update `.env.example`, Slack the team, update the deploy script, hope CI
+  picks it up. Now it's one line in the schema and the failures guide you.
+
+None of this is glamorous. The point of a tool like this is that you stop
+thinking about env vars - they become a thing you configure once per service
+and then forget. The best infrastructure is the one you don't have to keep
+making eye contact with.
+
+If you're curious, `ee` is at [ee.n1rna.net](https://ee.n1rna.net), the CLI
+source is [n1rna/ee-cli](https://github.com/n1rna/ee-cli), and the Action
+is [n1rna/ee-action](https://github.com/n1rna/ee-action). It's small on
+purpose.
